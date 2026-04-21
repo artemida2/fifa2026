@@ -36,7 +36,7 @@
     card.className = 'group-card';
     card.innerHTML = `
       <h3><span class="pill">${letter}</span> Group ${letter}</h3>
-      ${teams.map(t => `<div class="team-row"><span class="f">${t.flag}</span><span>${t.name}</span></div>`).join('')}
+      ${teams.map(t => `<div class="team-row">${window.Flags.img(t.flag, t.name)}<span>${t.name}</span></div>`).join('')}
     `;
     groupsGrid.appendChild(card);
   });
@@ -216,7 +216,7 @@
 
     quizCard.innerHTML = `
       <div class="quiz-result">
-        <div class="flag">${best.flag}</div>
+        <div class="flag">${window.Flags.img(best.flag, best.name, 'quiz-flag')}</div>
         <h3>${best.name}</h3>
         <p>${blurb} In 2026, your team to follow is <strong>${best.name}</strong>.</p>
         <div class="quiz-share">

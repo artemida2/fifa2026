@@ -31,6 +31,14 @@
   let selected = null;
   let loaded = false;
 
+  /* Twemoji SVG URL for a flag emoji — Windows/Linux desktops can't render
+     regional-indicator emoji with a system font, so we always use Twemoji. */
+  const TW_BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets';
+  function flagUrl(flag) {
+    const cp = [...flag].map(c => c.codePointAt(0).toString(16)).join('-');
+    return `${TW_BASE}/svg/${cp}.svg`;
+  }
+
   /* Render flag buttons immediately (works even before map loads) */
   function renderFlags(filter = '') {
     FLAG_GRID.innerHTML = '';
@@ -42,7 +50,12 @@
       b.dataset.code = t.code;
       b.title = t.name;
       b.setAttribute('aria-label', t.name);
-      b.innerHTML = `<span aria-hidden="true">${t.flag}</span>`;
+      const img = document.createElement('img');
+      img.className = 'flag-img';
+      img.alt = t.name;
+      img.loading = 'lazy';
+      img.src = flagUrl(t.flag);
+      b.appendChild(img);
       if (selected && selected.code === t.code) b.classList.add('active');
       b.addEventListener('click', () => selectTeam(t));
       FLAG_GRID.appendChild(b);
@@ -153,7 +166,7 @@
     // Update chip
     if (TEAM_CHIP) {
       TEAM_CHIP.innerHTML = `
-        <span class="flag" aria-hidden="true">${t.flag}</span>
+        <img class="flag-img chip" alt="${t.name}" src="${flagUrl(t.flag)}">
         <span class="name">${t.name}</span>
         <span class="route">Group ${t.group}</span>
       `;

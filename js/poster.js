@@ -1,8 +1,9 @@
 /* ============================================================
    "I'm going to World Cup 2026" — client-side poster generator
    - Pure HTML5 Canvas, no external libraries, instant rendering.
-   - User picks a name + team + background template; we render a
-     shareable 1200×1600 poster and expose a direct download link.
+   - Twemoji is used for flag rendering so Windows/Linux desktop
+     browsers (which lack regional-indicator emoji fonts) still
+     see flags and so the generated PNG isn't filled with tofu.
    ============================================================ */
 (function () {
   const form = document.getElementById('poster-form');
@@ -15,7 +16,6 @@
   const bgGrid    = document.getElementById('poster-bg-grid');
   const btnGen    = document.getElementById('poster-generate');
   const btnDl     = document.getElementById('poster-download');
-  const stage     = document.getElementById('poster-stage');
   const canvas    = document.getElementById('poster-canvas');
   const placeholder = document.getElementById('poster-placeholder');
 
@@ -31,6 +31,14 @@
   Object.entries(T.groups).forEach(([L, arr]) => arr.forEach(t => teams.push({ ...t, group: L })));
   teams.sort((a, b) => a.name.localeCompare(b.name));
 
+  /* ---- Twemoji helper: convert flag emoji to its asset URL ---- */
+  const TW_BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets';
+  function flagTwemojiUrl(flag, kind) {
+    const cp = [...flag].map(c => c.codePointAt(0).toString(16)).join('-');
+    if (kind === 'svg') return `${TW_BASE}/svg/${cp}.svg`;
+    return `${TW_BASE}/72x72/${cp}.png`;
+  }
+
   /* ---- Flag grid ---- */
   function renderFlags() {
     flagGrid.innerHTML = '';
@@ -40,7 +48,12 @@
       b.dataset.code = t.code;
       b.title = t.name;
       b.setAttribute('aria-label', t.name);
-      b.innerHTML = `<span aria-hidden="true">${t.flag}</span>`;
+      const img = document.createElement('img');
+      img.alt = t.name;
+      img.loading = 'lazy';
+      img.src = flagTwemojiUrl(t.flag, 'svg');
+      img.className = 'flag-img';
+      b.appendChild(img);
       if (state.team && state.team.code === t.code) b.classList.add('active');
       b.addEventListener('click', () => {
         state.team = t;
@@ -69,25 +82,38 @@
 
   /* ---- Name input ---- */
   nameInput.addEventListener('input', () => {
-    // Hard-cap 20 chars
     if (nameInput.value.length > 20) nameInput.value = nameInput.value.slice(0, 20);
     state.name = nameInput.value;
     counter.textContent = `${state.name.length}/20`;
   });
 
-  /* ---- Background cache ---- */
+  /* ---- Image caches ---- */
   const bgCache = {};
-  function loadBg(i) {
-    if (bgCache[i]) return Promise.resolve(bgCache[i]);
+  const flagCache = {};
+
+  function loadImage(src, opts = {}) {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => { bgCache[i] = img; resolve(img); };
-      img.onerror = reject;
-      img.src = `./assets/posters/bg${i}.webp`;
+      if (opts.crossOrigin) img.crossOrigin = opts.crossOrigin;
+      img.onload = () => resolve(img);
+      img.onerror = e => reject(e);
+      img.src = src;
     });
   }
-  // Pre-warm first bg so click feels instant
+
+  function loadBg(i) {
+    if (bgCache[i]) return Promise.resolve(bgCache[i]);
+    // Same-origin asset: no crossOrigin needed.
+    return loadImage(`./assets/posters/bg${i}.webp`).then(img => (bgCache[i] = img));
+  }
+
+  function loadFlag(flag) {
+    if (flagCache[flag]) return Promise.resolve(flagCache[flag]);
+    // Twemoji CDN returns `access-control-allow-origin: *`, so the canvas
+    // stays untainted with crossOrigin='anonymous' — required for toDataURL.
+    return loadImage(flagTwemojiUrl(flag, 'svg'), { crossOrigin: 'anonymous' })
+      .then(img => (flagCache[flag] = img));
+  }
   loadBg(1).catch(() => {});
 
   /* ---- Canvas draw primitives ---- */
@@ -101,30 +127,13 @@
     ctx.closePath();
   }
 
-  function wrapName(ctx, text, maxWidth) {
-    // Very short strings (1 word) just return as-is.
-    if (ctx.measureText(text).width <= maxWidth) return [text];
-    const words = text.split(/\s+/);
-    const lines = []; let line = '';
-    for (const w of words) {
-      const candidate = line ? line + ' ' + w : w;
-      if (ctx.measureText(candidate).width > maxWidth && line) {
-        lines.push(line); line = w;
-      } else {
-        line = candidate;
-      }
-    }
-    if (line) lines.push(line);
-    return lines;
-  }
-
-  function drawPoster() {
+  function drawPoster(flagImg) {
     const W = 1200, H = 1600;
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, W, H);
 
-    // 1. Background
+    /* 1. Background */
     const bg = bgCache[state.bg];
     if (bg) {
       ctx.drawImage(bg, 0, 0, W, H);
@@ -133,128 +142,146 @@
       ctx.fillRect(0, 0, W, H);
     }
 
-    // 2. Soft gradient scrim so text stays readable
-    const scrim = ctx.createLinearGradient(0, H * 0.45, 0, H);
-    scrim.addColorStop(0, 'rgba(5, 5, 31, 0)');
-    scrim.addColorStop(0.6, 'rgba(5, 5, 31, .55)');
-    scrim.addColorStop(1, 'rgba(5, 5, 31, .85)');
-    ctx.fillStyle = scrim;
-    ctx.fillRect(0, 0, W, H);
-
-    // 3. Logo badge "26" — top-left
+    /* 2. Top chyron bar — broadcast-style */
     ctx.save();
-    const badgeSize = 150;
-    const bx = 60, by = 60;
+    ctx.fillStyle = 'rgba(0,0,0,.68)';
+    ctx.fillRect(0, 0, W, 210);
+    // Bottom gradient accent stripe on the chyron
+    const stripe = ctx.createLinearGradient(0, 205, W, 205);
+    stripe.addColorStop(0, '#ff2d8a');
+    stripe.addColorStop(0.5, '#00a3ff');
+    stripe.addColorStop(1, '#1ea64a');
+    ctx.fillStyle = stripe;
+    ctx.fillRect(0, 205, W, 6);
+    ctx.restore();
+
+    /* 3. Logo badge "26" — top-left */
+    ctx.save();
+    const badgeSize = 140;
+    const bx = 60, by = 38;
     const grad = ctx.createLinearGradient(bx, by, bx + badgeSize, by + badgeSize);
     grad.addColorStop(0, '#ff2d8a');
     grad.addColorStop(0.5, '#00a3ff');
-    grad.addColorStop(1, '#00e5a0');
+    grad.addColorStop(1, '#1ea64a');
     ctx.fillStyle = grad;
-    drawRoundedRect(ctx, bx, by, badgeSize, badgeSize, 28);
+    drawRoundedRect(ctx, bx, by, badgeSize, badgeSize, 26);
     ctx.fill();
-    ctx.shadowColor = 'rgba(255, 45, 138, .6)';
-    ctx.shadowBlur = 40;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
     ctx.fillStyle = '#fff';
-    ctx.font = '900 96px "Inter", "Arial Black", sans-serif';
+    ctx.font = '900 90px "Bebas Neue", "Arial Black", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('26', bx + badgeSize / 2, by + badgeSize / 2 + 6);
     ctx.restore();
 
-    // 4. Small tagline next to badge
-    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    /* 4. Tagline next to badge */
+    ctx.fillStyle = '#fff';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.font = '700 28px "Inter", sans-serif';
+    ctx.font = '700 32px "Inter", "Helvetica Neue", sans-serif';
     ctx.fillText('FIFA WORLD CUP', bx + badgeSize + 28, by + 22);
-    ctx.font = '800 48px "Inter", sans-serif';
-    ctx.fillText('USA · CAN · MEX', bx + badgeSize + 28, by + 64);
+    ctx.font = '900 62px "Bebas Neue", "Arial Black", sans-serif';
+    ctx.fillText('USA · CAN · MEX', bx + badgeSize + 28, by + 66);
 
-    // 5. Giant flag of team (center, above text)
-    const team = state.team;
-    if (team) {
+    /* 5. Bottom chyron band with scoreboard feel */
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,.78)';
+    ctx.fillRect(0, 1410, W, 190);
+    const bstripe = ctx.createLinearGradient(0, 1408, W, 1408);
+    bstripe.addColorStop(0, '#1ea64a');
+    bstripe.addColorStop(0.5, '#ffd100');
+    bstripe.addColorStop(1, '#ff2d8a');
+    ctx.fillStyle = bstripe;
+    ctx.fillRect(0, 1404, W, 6);
+    ctx.restore();
+
+    /* 6. Flag: big, centered above text */
+    if (flagImg) {
+      const size = 520;
+      const fx = (W - size) / 2;
+      const fy = 540;
+      // Subtle glow under flag
       ctx.save();
-      ctx.font = '520px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.shadowColor = 'rgba(0,0,0,.55)';
-      ctx.shadowBlur = 60;
-      ctx.shadowOffsetY = 20;
-      ctx.fillText(team.flag, W / 2, 760);
+      ctx.shadowColor = 'rgba(0,0,0,.6)';
+      ctx.shadowBlur = 50;
+      ctx.shadowOffsetY = 25;
+      ctx.drawImage(flagImg, fx, fy, size, size);
       ctx.restore();
     }
 
-    // 6. Main headline: "NAME is going to support TEAM!"
-    const name = (state.name || 'Your name').toUpperCase();
+    /* 7. Scrim for text readability */
+    const scrim = ctx.createLinearGradient(0, 1050, 0, 1410);
+    scrim.addColorStop(0, 'rgba(5,5,31,0)');
+    scrim.addColorStop(1, 'rgba(5,5,31,.82)');
+    ctx.fillStyle = scrim;
+    ctx.fillRect(0, 1050, W, 360);
+
+    /* 8. Main name headline */
+    const team = state.team;
+    const name = (state.name || 'YOUR NAME').toUpperCase();
     const teamName = team ? team.name : 'THE WORLD CUP';
 
-    // Name — very large, uses gradient fill
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const nameFont = (s) => `900 ${s}px "Inter","Arial Black",sans-serif`;
-    // Pick size that fits
-    let size = 160;
+    const nameFont = (s) => `900 ${s}px "Bebas Neue", "Arial Black", sans-serif`;
+    let size = 220;
     ctx.font = nameFont(size);
-    while (ctx.measureText(name).width > W - 160 && size > 64) {
+    while (ctx.measureText(name).width > W - 160 && size > 72) {
       size -= 8; ctx.font = nameFont(size);
     }
-    const nameGrad = ctx.createLinearGradient(0, 1120 - size/2, 0, 1120 + size/2);
-    nameGrad.addColorStop(0, '#ffe45c');
+    // Gold/pink gradient
+    const nameGrad = ctx.createLinearGradient(0, 1140 - size/2, 0, 1140 + size/2);
+    nameGrad.addColorStop(0, '#ffd100');
     nameGrad.addColorStop(1, '#ff2d8a');
     ctx.fillStyle = nameGrad;
-    ctx.shadowColor = 'rgba(0,0,0,.45)';
+    ctx.shadowColor = 'rgba(0,0,0,.55)';
     ctx.shadowBlur = 20; ctx.shadowOffsetY = 6;
-    ctx.fillText(name, W / 2, 1120);
+    ctx.fillText(name, W / 2, 1140);
     ctx.restore();
 
-    // Subtitle line 1
+    /* 9. Subtitle */
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = 'rgba(255,255,255,.92)';
     ctx.font = '600 44px "Inter", sans-serif';
-    ctx.fillText('is going to support', W / 2, 1240);
+    ctx.fillText('is going to support', W / 2, 1250);
     ctx.restore();
 
-    // Team name — second highlight
+    /* 10. Team name */
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    let tSize = 110;
-    const tFont = (s) => `900 ${s}px "Inter","Arial Black",sans-serif`;
+    let tSize = 130;
+    const tFont = (s) => `900 ${s}px "Bebas Neue", "Arial Black", sans-serif`;
     ctx.font = tFont(tSize);
-    while (ctx.measureText(teamName.toUpperCase() + '!').width > W - 160 && tSize > 54) {
+    while (ctx.measureText(teamName.toUpperCase() + '!').width > W - 160 && tSize > 64) {
       tSize -= 6; ctx.font = tFont(tSize);
     }
-    const tGrad = ctx.createLinearGradient(0, 1330 - tSize/2, 0, 1330 + tSize/2);
+    const tGrad = ctx.createLinearGradient(0, 1335 - tSize/2, 0, 1335 + tSize/2);
     tGrad.addColorStop(0, '#ffffff');
     tGrad.addColorStop(1, '#4fd0ff');
     ctx.fillStyle = tGrad;
-    ctx.shadowColor = 'rgba(0, 163, 255, .5)';
+    ctx.shadowColor = 'rgba(0, 163, 255, .55)';
     ctx.shadowBlur = 22;
-    ctx.fillText(teamName.toUpperCase() + '!', W / 2, 1330);
+    ctx.fillText(teamName.toUpperCase() + '!', W / 2, 1335);
     ctx.restore();
 
-    // Footer ribbon
+    /* 11. Bottom chyron text */
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(255,255,255,.7)';
-    ctx.font = '600 28px "Inter", sans-serif';
-    ctx.fillText('JUNE 11 — JULY 19, 2026', W / 2, 1470);
-    ctx.font = '700 22px "Inter", sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,.55)';
-    ctx.fillText('worldcup2026hub · bracket predictor · host cities', W / 2, 1520);
+    ctx.fillStyle = '#fff';
+    ctx.font = '900 56px "Bebas Neue", "Arial Black", sans-serif';
+    ctx.fillText('JUNE 11 – JULY 19 · 2026', W / 2, 1475);
+    ctx.font = '600 24px "Inter", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,.65)';
+    ctx.fillText('worldcup2026hub · bracket predictor · host cities · poster', W / 2, 1535);
     ctx.restore();
   }
 
   async function generate() {
     if (!state.team) {
-      nameInput.focus();
       alert('Pick a team first ✈️');
       return;
     }
@@ -265,20 +292,33 @@
     btnGen.disabled = true;
     btnGen.textContent = 'Generating…';
     try {
-      await loadBg(state.bg);
-      drawPoster();
+      // Show canvas BEFORE drawing — some browsers return blank
+      // buffer from toDataURL when the element was display:none.
       placeholder.classList.add('hidden');
       canvas.classList.remove('hidden');
       btnDl.classList.remove('hidden');
-      // Provide download link
-      btnDl.onclick = () => {
-        const link = document.createElement('a');
-        const safe = state.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'fan';
-        link.download = `wc2026-${safe}.png`;
-        link.href = canvas.toDataURL('image/png');
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+
+      const [_, flagImg] = await Promise.all([
+        loadBg(state.bg),
+        loadFlag(state.team.flag).catch(() => null),
+      ]);
+      drawPoster(flagImg);
+
+      btnDl.onclick = (e) => {
+        e.preventDefault();
+        try {
+          const dataUrl = canvas.toDataURL('image/png');
+          const link = document.createElement('a');
+          const safe = state.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'fan';
+          link.download = `wc2026-${safe}.png`;
+          link.href = dataUrl;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        } catch (err) {
+          console.error(err);
+          alert('Could not save poster (browser blocked the export). Right-click the poster → Save Image As.');
+        }
       };
     } catch (e) {
       console.error(e);
@@ -290,8 +330,6 @@
   }
 
   btnGen.addEventListener('click', generate);
-
-  // Allow Enter in the name field to trigger generation.
   nameInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); generate(); }
   });

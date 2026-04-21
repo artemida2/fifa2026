@@ -66,7 +66,7 @@
         const row = document.createElement('div');
         row.className = 'predict-row';
         if (slot) row.dataset.slot = slot;
-        row.innerHTML = `<span class="f">${t.flag}</span><span class="n">${t.name}</span><span class="badge">${badge}</span>`;
+        row.innerHTML = `${window.Flags.img(t.flag, t.name)}<span class="n">${t.name}</span><span class="badge">${badge}</span>`;
         row.addEventListener('click', () => cycleGroupPick(letter, t.code));
         card.appendChild(row);
       });
@@ -196,7 +196,9 @@
     const banner = document.getElementById('champion-banner');
     if (champ && teamByCode[champ]) {
       banner.classList.remove('hidden');
-      document.getElementById('champion-flag').textContent = teamByCode[champ].flag;
+      const champFlagEl = document.getElementById('champion-flag');
+      champFlagEl.textContent = '';
+      champFlagEl.insertAdjacentHTML('beforeend', window.Flags.img(teamByCode[champ].flag, teamByCode[champ].name, 'champ-flag'));
       document.getElementById('champion-name').textContent = teamByCode[champ].name;
       const shareText = `My 2026 World Cup champion: ${teamByCode[champ].flag} ${teamByCode[champ].name}! Make your own bracket:`;
       document.getElementById('champion-share-x').href =
@@ -226,7 +228,7 @@
     }
     const team = teamByCode[code];
     if (winnerCode === code) el.className += ' winner';
-    el.innerHTML = `<span class="f">${team.flag}</span><span class="n">${team.name}</span>`;
+    el.innerHTML = `${window.Flags.img(team.flag, team.name)}<span class="n">${team.name}</span>`;
     el.addEventListener('click', () => {
       state.bracket[keyFor(round, idx, 'win')] = code;
       // Invalidate all downstream rounds for this branch

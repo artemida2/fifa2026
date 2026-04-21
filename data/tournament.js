@@ -115,3 +115,29 @@ window.TOURNAMENT = (function () {
 
   return { kickoff, final, cities, groups, tiers };
 })();
+
+/* ---------------------------------------------------------------
+   Flag rendering helper
+   Windows & many Linux desktop browsers ship without a font that
+   can render regional-indicator flag emoji (🇦🇷, 🇺🇸, …), so
+   throughout the site we always render flags via Twemoji SVGs.
+   --------------------------------------------------------------- */
+window.Flags = (function () {
+  const BASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets';
+  function codepoints(emoji) {
+    return [...emoji]
+      .filter(c => c.codePointAt(0) !== 0xfe0f)   // strip VS-16
+      .map(c => c.codePointAt(0).toString(16))
+      .join('-');
+  }
+  function url(emoji, kind) {
+    const cp = codepoints(emoji);
+    if (kind === 'png') return `${BASE}/72x72/${cp}.png`;
+    return `${BASE}/svg/${cp}.svg`;
+  }
+  function img(emoji, alt, extraClass) {
+    const cls = 'flag-img' + (extraClass ? ' ' + extraClass : '');
+    return `<img class="${cls}" alt="${alt || ''}" loading="lazy" src="${url(emoji, 'svg')}">`;
+  }
+  return { url, img };
+})();
