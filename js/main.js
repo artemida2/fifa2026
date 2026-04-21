@@ -29,56 +29,6 @@
   tick();
   setInterval(tick, 1000);
 
-  /* ---------------- Host-city map + panel ---------------- */
-  const dotsHost = document.getElementById('city-dots');
-  const panel    = document.getElementById('city-panel');
-  const cityNav  = document.querySelectorAll('.city-nav button');
-  let activeCity = T.cities.find(c => c.code === 'USA-NYC'); // default: final venue
-
-  function renderDots(filter) {
-    dotsHost.innerHTML = '';
-    T.cities.forEach(c => {
-      if (filter !== 'all' && c.country !== filter) return;
-      const isFinal = c.code === 'USA-NYC';
-      const dot = document.createElement('button');
-      dot.className = 'map-dot' + (c === activeCity ? ' active' : '');
-      dot.style.left = c.x + '%';
-      dot.style.top  = c.y + '%';
-      dot.title = c.city + ' — ' + c.stadium;
-      dot.setAttribute('aria-label', c.city + ', ' + c.country + ': ' + c.stadium);
-      if (isFinal) dot.dataset.final = 'true';
-      dot.addEventListener('click', () => { activeCity = c; renderDots(filter); renderPanel(); });
-      dotsHost.appendChild(dot);
-    });
-  }
-
-  function renderPanel() {
-    const c = activeCity;
-    const cap = c.capacity.toLocaleString('en-US');
-    panel.innerHTML = `
-      <div><span class="flag">${c.flag}</span>
-        <strong style="font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--fg-muted);">${c.country}</strong>
-      </div>
-      <h3>${c.city}</h3>
-      <div class="country">${c.role}</div>
-      <div class="row"><b>Stadium</b><span>${c.stadium}</span></div>
-      <div class="row"><b>Capacity</b><span>${cap}</span></div>
-      <div class="row"><b>Role in 2026</b><span>${c.role}</span></div>
-      <div class="row"><b>Tip</b><span>Click another dot on the map →</span></div>
-    `;
-  }
-
-  cityNav.forEach(btn => {
-    btn.addEventListener('click', () => {
-      cityNav.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderDots(btn.dataset.country);
-    });
-  });
-
-  renderDots('all');
-  renderPanel();
-
   /* ---------------- Groups grid ---------------- */
   const groupsGrid = document.getElementById('groups-grid');
   Object.entries(T.groups).forEach(([letter, teams]) => {

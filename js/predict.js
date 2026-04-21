@@ -13,7 +13,10 @@
   const state = loadState() || {
     groupPicks: {},   // { A: { 1: 'MEX', 2: 'RSA', 3: 'KOR' }, ... }
     bracket: {},      // { 'R32-0-home': 'USA', 'R32-0-win': 'USA', ... }
+    nextSlot: {},     // { A: 1|2|3 } — cursor that cycles 1→2→3→1... per group
   };
+  // Migrate state loaded from older versions where nextSlot didn't exist.
+  if (!state.nextSlot) state.nextSlot = {};
   function saveState() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (e) {} }
   function loadState() {
     try {
@@ -72,26 +75,29 @@
     updateProgress();
   }
 
+  /**
+   * Per-group counter logic.
+   *  - Each group has an independent cursor that cycles 1 → 2 → 3 → 1 → 2 → 3…
+   *  - The N-th click on *any* team in that group assigns the current cursor
+   *    value to that team (and steals that rank from whoever had it before).
+   *  - After assigning, cursor advances to the next rank.
+   *  Example: click A twice → A=1st, cursor=2 → A=2nd (1st is now empty).
+   *  Then click B (3rd click) → B=3rd, cursor=1. Final: A=2nd, B=3rd. ✓
+   */
   function cycleGroupPick(letter, code) {
     state.groupPicks[letter] = state.groupPicks[letter] || {};
     const p = state.groupPicks[letter];
-    const cur = (p[1] === code ? 1 : p[2] === code ? 2 : p[3] === code ? 3 : 0);
-    // Clear this team from any slot first
+    const slot = state.nextSlot[letter] || 1;  // 1..3 cursor
+    // Remove `code` from wherever it currently sits.
     [1, 2, 3].forEach(s => { if (p[s] === code) delete p[s]; });
-    const next = cur === 0 ? 1 : cur === 1 ? 2 : cur === 2 ? 3 : 0;
-    if (next !== 0) {
-      // If another team occupies this slot, demote it
-      if (p[next]) {
-        const displaced = p[next];
-        [1, 2, 3].forEach(s => { if (p[s] === displaced) delete p[s]; });
-      }
-      p[next] = code;
-    }
-    saveState();
-    renderGroups();
-    // Invalidate bracket — picks changed.
+    // Assign (displacing whoever had this rank).
+    p[slot] = code;
+    // Advance cursor 1 → 2 → 3 → 1 …
+    state.nextSlot[letter] = slot === 3 ? 1 : slot + 1;
+    // Picks changed → invalidate dependent bracket.
     state.bracket = {};
     saveState();
+    renderGroups();
   }
 
   /* ----------- Round-of-32 seeding ----------- */
@@ -271,6 +277,7 @@
     Object.entries(T.groups).forEach(([L, teams]) => {
       const ranked = teams.slice().sort((a, b) => strength(b.code) - strength(a.code));
       state.groupPicks[L] = { 1: ranked[0].code, 2: ranked[1].code, 3: ranked[2].code };
+      state.nextSlot[L] = 1;  // cursor back to 1st
     });
     // Clear bracket and then fill winners
     state.bracket = {};
@@ -318,6 +325,7 @@
     if (!confirm('Reset all your picks? This cannot be undone.')) return;
     state.groupPicks = {};
     state.bracket = {};
+    state.nextSlot = {};
     saveState();
     renderGroups();
     renderBracket();
