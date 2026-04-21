@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>World Cup 2026 Hub — Countdown, Host Cities, Groups & Bracket Predictor</title>
+  <meta name="description" content="Your interactive hub for the 2026 FIFA World Cup in the USA, Canada and Mexico. Live countdown, all 16 host cities, every group, a fan quiz and a full bracket predictor you can share." />
+  <meta name="keywords" content="world cup 2026, fifa world cup 2026, world cup bracket predictor, world cup 2026 schedule, world cup 2026 host cities, world cup 2026 groups, world cup countdown" />
+  <meta name="theme-color" content="#e4002b" />
+  <link rel="canonical" href="./" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23e4002b'/%3E%3Ctext x='50' y='64' text-anchor='middle' font-size='58' font-family='Arial Black,sans-serif' fill='white' font-weight='900'%3E26%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./css/styles.css" />
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="World Cup 2026 Hub — Countdown, Host Cities, Groups & Bracket Predictor" />
+  <meta property="og:description" content="Live countdown, all 16 host cities, every group and a shareable bracket predictor for the 2026 FIFA World Cup." />
+  <meta property="og:site_name" content="World Cup 2026 Hub" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="World Cup 2026 Hub" />
+  <meta name="twitter:description" content="Live countdown, all 16 host cities, every group and a shareable bracket predictor." />
+
+  <!-- Schema.org: SportsEvent -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    "name": "2026 FIFA World Cup",
+    "startDate": "2026-06-11",
+    "endDate": "2026-07-19",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "location": [
+      { "@type": "Place", "name": "Estadio Azteca",  "address": "Mexico City, Mexico" },
+      { "@type": "Place", "name": "MetLife Stadium", "address": "East Rutherford, NJ, USA" }
+    ],
+    "organizer": { "@type": "SportsOrganization", "name": "FIFA", "url": "https://www.fifa.com" },
+    "description": "First-ever 48-team FIFA World Cup, hosted across 16 cities in the USA, Canada and Mexico."
+  }
+  </script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container nav-inner">
+    <a href="./" class="brand">
+      <span class="logo" aria-hidden="true">26</span>
+      <span class="brand-text">World Cup 2026 Hub <small>USA · Canada · Mexico</small></span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#cities">Host Cities</a>
+      <a href="#groups">Groups</a>
+      <a href="#quiz">Your Team</a>
+      <a href="./predict.html" class="nav-cta">Bracket Predictor →</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="container">
+      <h1>The <span class="hl">2026 World Cup</span><br />starts in…</h1>
+      <p class="lead">48 teams. 16 cities. 3 countries. One history-making tournament. Everything you need to follow the <strong>FIFA World Cup 2026</strong> — live countdown, every group, every host stadium, and a bracket predictor you can share.</p>
+
+      <div class="hero-cta">
+        <a href="./predict.html" class="btn btn-primary">Build Your Bracket →</a>
+        <a href="#cities" class="btn btn-ghost">Explore Host Cities</a>
+      </div>
+
+      <div class="countdown-card" aria-live="polite">
+        <div class="unit"><div class="num" id="cd-d">—</div><span class="lbl">Days</span></div>
+        <div class="unit"><div class="num" id="cd-h">—</div><span class="lbl">Hours</span></div>
+        <div class="unit"><div class="num" id="cd-m">—</div><span class="lbl">Minutes</span></div>
+        <div class="unit"><div class="num" id="cd-s">—</div><span class="lbl">Seconds</span></div>
+      </div>
+      <p class="countdown-meta" id="cd-meta">until kick-off at Estadio Azteca, Mexico City</p>
+
+      <div class="stats-strip">
+        <div class="stat"><b>48</b><span>Teams</span></div>
+        <div class="stat"><b>16</b><span>Host Cities</span></div>
+        <div class="stat"><b>104</b><span>Matches</span></div>
+        <div class="stat"><b>39</b><span>Days of Football</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOST CITIES ============ -->
+  <section id="cities">
+    <div class="container">
+      <h2>Host Cities & Stadiums</h2>
+      <p class="sub">For the first time ever, the World Cup is spread across three countries — click any city to see its venue.</p>
+
+      <div class="city-nav" role="tablist">
+        <button class="active" data-country="all" role="tab">All 16</button>
+        <button data-country="USA" role="tab">🇺🇸 USA (11)</button>
+        <button data-country="Canada" role="tab">🇨🇦 Canada (2)</button>
+        <button data-country="Mexico" role="tab">🇲🇽 Mexico (3)</button>
+      </div>
+
+      <div class="cities-wrap">
+        <div class="map-card" aria-label="Map of 2026 World Cup host cities">
+          <!-- Stylised North-America outline -->
+          <svg viewBox="0 0 100 62" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="landGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"  stop-color="#1b2338"/>
+                <stop offset="100%" stop-color="#0f1424"/>
+              </linearGradient>
+            </defs>
+            <!-- Simplified North America silhouette -->
+            <path fill="url(#landGrad)" stroke="#2a3350" stroke-width="0.3"
+                  d="M6,10 L18,6 L30,9 L46,5 L62,7 L74,4 L86,7 L92,14 L88,22 L84,28 L82,35 L76,40 L70,42 L66,48 L62,54 L56,58 L50,60 L42,58 L36,56 L32,52 L28,54 L22,54 L20,50 L26,46 L30,42 L24,38 L18,32 L14,28 L10,22 L8,16 Z"/>
+            <!-- Mexico extension -->
+            <path fill="url(#landGrad)" stroke="#2a3350" stroke-width="0.3"
+                  d="M22,54 L26,58 L30,62 L34,62 L36,58 L32,56 L28,54 Z"/>
+          </svg>
+          <div id="city-dots"></div>
+          <div class="map-legend">
+            <span><span class="dot" style="background:#ffd100"></span>Final</span>
+            <span><span class="dot" style="background:#e4002b"></span>Host city</span>
+          </div>
+        </div>
+
+        <div class="city-panel" id="city-panel" aria-live="polite">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GROUPS ============ -->
+  <section id="groups" style="background: rgba(255,255,255,.02);">
+    <div class="container">
+      <h2>All 12 Groups</h2>
+      <p class="sub">The final draw — every team, every group. Ready to predict who advances? <a href="./predict.html" style="color:var(--accent-2); text-decoration:underline;">Open the predictor →</a></p>
+      <div class="groups-grid" id="groups-grid"></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section id="quiz">
+    <div class="container">
+      <h2>Which team should <em>you</em> support?</h2>
+      <p class="sub">Six quick questions and we'll match you with one of the 48 teams competing in 2026. Share your result with friends.</p>
+
+      <div class="quiz" id="quiz-card">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA ============ -->
+  <section>
+    <div class="container">
+      <div class="cta-band">
+        <h2>Ready to call the whole tournament?</h2>
+        <p>Pick group winners, fill every knockout round, save your bracket and share it with your friends.</p>
+        <a href="./predict.html" class="btn btn-ghost" style="background: rgba(0,0,0,.35); color:#fff;">Open the Bracket Predictor →</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <div>© 2026 World Cup 2026 Hub · Fan-made, not affiliated with FIFA.</div>
+    <div><a href="./predict.html">Bracket Predictor</a> · <a href="#cities">Host Cities</a> · <a href="#groups">Groups</a></div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="./data/tournament.js"></script>
+<script src="./js/main.js"></script>
+</body>
+</html>

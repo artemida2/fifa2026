@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Replace the host below with your actual GitHub Pages URL after deploy.
+# Sitemap: https://<your-user>.github.io/<repo>/sitemap.xml
