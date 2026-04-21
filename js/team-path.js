@@ -148,7 +148,7 @@
   function popupHtml(st) {
     return `
       <div class="stadium-popup-hdr">
-        <div class="city">${st.flag} ${st.city}</div>
+        <div class="city">${window.Flags.img(st.flag, st.country)}<span>${st.city}</span></div>
         <div class="country-line">${st.country}</div>
       </div>
       <div class="stadium-popup-body">

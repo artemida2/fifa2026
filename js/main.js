@@ -217,8 +217,8 @@
     quizCard.innerHTML = `
       <div class="quiz-result">
         <div class="flag">${window.Flags.img(best.flag, best.name, 'quiz-flag')}</div>
-        <h3>${best.name}</h3>
-        <p>${blurb} In 2026, your team to follow is <strong>${best.name}</strong>.</p>
+        <h3>Your team is <em>${best.name}</em>.</h3>
+        <p class="why">${blurb} In 2026, your team to follow is <strong>${best.name}</strong>.</p>
         <div class="quiz-share">
           <button class="btn btn-primary" id="q-share">📋 Copy result</button>
           <a class="btn btn-ghost" href="https://twitter.com/intent/tweet?text=${encodeURIComponent('My 2026 World Cup team is ' + best.flag + ' ' + best.name + '! Find yours at')}&url=${encodeURIComponent(location.href)}" target="_blank" rel="noopener">𝕏 Share on X</a>
